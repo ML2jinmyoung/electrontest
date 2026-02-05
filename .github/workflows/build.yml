@@ -1,12 +1,12 @@
-name: Build & Release Windows Installer
+name: Build & Release Windows
 
 on:
   push:
-    tags: ['v*']        # v1.0.0 같은 태그 push 시 자동 실행
-  workflow_dispatch:     # 수동 실행 가능
+    tags: ['v*']
+  workflow_dispatch:
 
 permissions:
-  contents: write        # Release 생성 권한
+  contents: write
 
 jobs:
   build-windows:
@@ -21,6 +21,15 @@ jobs:
 
       - run: npm install
 
-      - run: npm run release
+      - run: npm run build
+
+      - name: Upload to GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          draft: false
+          files: |
+            dist/*.exe
+            dist/*.zip
+            dist/latest.yml
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
