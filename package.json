@@ -26,7 +26,7 @@
       "provider": "github"
     },
     "win": {
-      "target": "nsis"
+      "target": ["nsis", "zip"]
     },
     "linux": {
       "target": "AppImage"
