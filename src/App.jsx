@@ -1,10 +1,8 @@
 import React, { useState } from 'react';
 
-const API_URL = 'http://localhost:8000';
-
 function App() {
   const [status, setStatus] = useState('idle');
-  const [savedResult, setSavedResult] = useState(null);
+  const [folderData, setFolderData] = useState(null);
   const [error, setError] = useState(null);
 
   const handleSelectFolder = async () => {
@@ -12,28 +10,13 @@ function App() {
       setError(null);
       setStatus('selecting');
 
-      // 1. Electron: open native folder dialog & read contents
       const data = await window.electronAPI.selectFolder();
       if (!data) {
         setStatus('idle');
         return;
       }
 
-      setStatus('uploading');
-
-      // 2. Send folder metadata to FastAPI
-      const response = await fetch(`${API_URL}/api/upload`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
-      });
-
-      if (!response.ok) {
-        throw new Error(`Server responded with ${response.status}`);
-      }
-
-      const result = await response.json();
-      setSavedResult(result);
+      setFolderData(data);
       setStatus('done');
     } catch (err) {
       setError(err.message);
@@ -51,15 +34,11 @@ function App() {
 
   return (
     <div className="app">
-      <h1>Folder Upload Manager</h1>
+      <h1>Folder Viewer</h1>
 
       <div className="upload-section">
-        <button
-          onClick={handleSelectFolder}
-          disabled={status === 'uploading'}
-          className="upload-btn"
-        >
-          {status === 'uploading' ? 'Uploading...' : 'Select & Upload Folder'}
+        <button onClick={handleSelectFolder} className="upload-btn">
+          Select Folder
         </button>
       </div>
 
@@ -69,26 +48,26 @@ function App() {
         </div>
       )}
 
-      {status === 'done' && savedResult && (
+      {status === 'done' && folderData && (
         <div className="result-section">
-          <div className="success-banner">Save Complete!</div>
+          <div className="success-banner">Loaded!</div>
 
           <div className="folder-info">
-            <h2>{savedResult.folderName}</h2>
+            <h2>{folderData.folderName}</h2>
             <p
               className="folder-path clickable"
-              onClick={() => handleOpenPath(savedResult.folderPath)}
+              onClick={() => handleOpenPath(folderData.folderPath)}
             >
-              {savedResult.folderPath}
+              {folderData.folderPath}
             </p>
             <p className="file-count">
-              {savedResult.files.length} items saved
+              {folderData.files.length} items
             </p>
           </div>
 
           <div className="file-list">
-            <h3>Saved Files & Folders</h3>
-            {savedResult.files.map((file, index) => (
+            <h3>Files & Folders</h3>
+            {folderData.files.map((file, index) => (
               <div key={index} className={`file-item ${file.type}`}>
                 <span className="file-icon">
                   {file.type === 'directory' ? '\uD83D\uDCC1' : '\uD83D\uDCC4'}

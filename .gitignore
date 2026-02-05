@@ -1,6 +1,2 @@
 node_modules/
 dist/
-backend/data/folders.json
-backend/__pycache__/
-backend/.venv/
-*.pyc

@@ -25,10 +25,6 @@ function createWindow() {
   }
 }
 
-/**
- * Recursively read folder contents.
- * Skips hidden directories and node_modules.
- */
 function readFolderContents(folderPath) {
   const results = [];
 
@@ -37,23 +33,12 @@ function readFolderContents(folderPath) {
       const entries = fs.readdirSync(dir, { withFileTypes: true });
       for (const entry of entries) {
         const fullPath = path.join(dir, entry.name);
-
         if (entry.isDirectory()) {
-          if (entry.name.startsWith('.') || entry.name === 'node_modules') {
-            continue;
-          }
-          results.push({
-            name: entry.name,
-            path: fullPath,
-            type: 'directory',
-          });
+          if (entry.name.startsWith('.') || entry.name === 'node_modules') continue;
+          results.push({ name: entry.name, path: fullPath, type: 'directory' });
           walk(fullPath);
         } else {
-          results.push({
-            name: entry.name,
-            path: fullPath,
-            type: 'file',
-          });
+          results.push({ name: entry.name, path: fullPath, type: 'file' });
         }
       }
     } catch (err) {
@@ -65,51 +50,40 @@ function readFolderContents(folderPath) {
   return results;
 }
 
-// ── IPC Handlers ──────────────────────────────────────────
+// ── IPC ───────────────────────────────────────────────────
 
 ipcMain.handle('select-folder', async () => {
   const result = await dialog.showOpenDialog(mainWindow, {
     properties: ['openDirectory'],
   });
-
-  if (result.canceled || result.filePaths.length === 0) {
-    return null;
-  }
+  if (result.canceled || result.filePaths.length === 0) return null;
 
   const folderPath = result.filePaths[0];
-  const folderName = path.basename(folderPath);
-  const files = readFolderContents(folderPath);
-
-  return { folderName, folderPath, files };
+  return {
+    folderName: path.basename(folderPath),
+    folderPath,
+    files: readFolderContents(folderPath),
+  };
 });
 
-ipcMain.handle('open-path', async (_event, filePath) => {
-  try {
-    const err = await shell.openPath(filePath);
-    if (err) return { success: false, error: err };
-    return { success: true };
-  } catch (err) {
-    return { success: false, error: err.message };
-  }
+ipcMain.handle('open-path', async (_e, p) => {
+  const err = await shell.openPath(p);
+  return err ? { success: false, error: err } : { success: true };
 });
 
-ipcMain.handle('show-in-folder', async (_event, filePath) => {
-  shell.showItemInFolder(filePath);
+ipcMain.handle('show-in-folder', async (_e, p) => {
+  shell.showItemInFolder(p);
   return { success: true };
 });
 
-// ── App lifecycle ─────────────────────────────────────────
+// ── Lifecycle ─────────────────────────────────────────────
 
 app.whenReady().then(createWindow);
 
 app.on('window-all-closed', () => {
-  if (process.platform !== 'darwin') {
-    app.quit();
-  }
+  if (process.platform !== 'darwin') app.quit();
 });
 
 app.on('activate', () => {
-  if (BrowserWindow.getAllWindows().length === 0) {
-    createWindow();
-  }
+  if (BrowserWindow.getAllWindows().length === 0) createWindow();
 });
