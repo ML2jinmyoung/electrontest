@@ -8,7 +8,8 @@
     "dev:electron": "wait-on http://localhost:5173 && cross-env NODE_ENV=development electron .",
     "dev": "concurrently -k \"npm run dev:react\" \"npm run dev:electron\"",
     "build:react": "vite build",
-    "build": "npm run build:react && electron-builder",
+    "build": "npm run build:react && electron-builder --publish never",
+    "release": "npm run build:react && electron-builder --publish always",
     "start": "electron ."
   },
   "build": {
@@ -20,6 +21,9 @@
     ],
     "mac": {
       "target": "dmg"
+    },
+    "publish": {
+      "provider": "github"
     },
     "win": {
       "target": "nsis"
@@ -38,6 +42,7 @@
     "wait-on": "^7.2.0"
   },
   "dependencies": {
+    "electron-updater": "^6.1.7",
     "react": "^18.2.0",
     "react-dom": "^18.2.0"
   }

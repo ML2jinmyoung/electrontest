@@ -1,9 +1,16 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
 function App() {
   const [status, setStatus] = useState('idle');
   const [folderData, setFolderData] = useState(null);
   const [error, setError] = useState(null);
+  const [update, setUpdate] = useState({ status: null, percent: 0 });
+
+  useEffect(() => {
+    window.electronAPI.onUpdateStatus((s, data) => {
+      setUpdate({ status: s, percent: data || 0 });
+    });
+  }, []);
 
   const handleSelectFolder = async () => {
     try {
@@ -35,6 +42,29 @@ function App() {
   return (
     <div className="app">
       <h1>Folder Viewer</h1>
+
+      {/* ── Update Banner ── */}
+      {update.status === 'available' && (
+        <div className="update-banner downloading">
+          New update found. Downloading...
+        </div>
+      )}
+      {update.status === 'downloading' && (
+        <div className="update-banner downloading">
+          Downloading update... {update.percent}%
+        </div>
+      )}
+      {update.status === 'ready' && (
+        <div className="update-banner ready">
+          Update ready!{' '}
+          <button
+            className="update-install-btn"
+            onClick={() => window.electronAPI.installUpdate()}
+          >
+            Restart Now
+          </button>
+        </div>
+      )}
 
       <div className="upload-section">
         <button onClick={handleSelectFolder} className="upload-btn">

@@ -1,6 +1,7 @@
 const { app, BrowserWindow, ipcMain, dialog, shell } = require('electron');
 const path = require('path');
 const fs = require('fs');
+const { autoUpdater } = require('electron-updater');
 
 const isDev = !app.isPackaged;
 
@@ -24,6 +25,36 @@ function createWindow() {
     mainWindow.loadFile(path.join(__dirname, '../dist/index.html'));
   }
 }
+
+// ── Auto Update ───────────────────────────────────────────
+
+function setupAutoUpdater() {
+  if (isDev) return;
+
+  autoUpdater.checkForUpdatesAndNotify();
+
+  autoUpdater.on('update-available', () => {
+    mainWindow.webContents.send('update-status', 'available');
+  });
+
+  autoUpdater.on('download-progress', (progress) => {
+    mainWindow.webContents.send('update-status', 'downloading', Math.round(progress.percent));
+  });
+
+  autoUpdater.on('update-downloaded', () => {
+    mainWindow.webContents.send('update-status', 'ready');
+  });
+
+  autoUpdater.on('error', (err) => {
+    console.error('Update error:', err.message);
+  });
+}
+
+ipcMain.handle('install-update', () => {
+  autoUpdater.quitAndInstall();
+});
+
+// ── Folder ────────────────────────────────────────────────
 
 function readFolderContents(folderPath) {
   const results = [];
@@ -49,8 +80,6 @@ function readFolderContents(folderPath) {
   walk(folderPath);
   return results;
 }
-
-// ── IPC ───────────────────────────────────────────────────
 
 ipcMain.handle('select-folder', async () => {
   const result = await dialog.showOpenDialog(mainWindow, {
@@ -78,7 +107,10 @@ ipcMain.handle('show-in-folder', async (_e, p) => {
 
 // ── Lifecycle ─────────────────────────────────────────────
 
-app.whenReady().then(createWindow);
+app.whenReady().then(() => {
+  createWindow();
+  setupAutoUpdater();
+});
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') app.quit();
